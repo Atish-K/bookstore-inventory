@@ -1,0 +1,31 @@
+{
+  "name": "bookstore-inventory-api",
+  "version": "1.0.0",
+  "description": "REST API for managing bookstore authors, books and stock",
+  "main": "src/server.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:create": "sequelize-cli db:create --charset utf8mb4 --collate utf8mb4_unicode_ci",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:reset": "sequelize-cli db:seed:undo:all && sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && sequelize-cli db:seed:all"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "joi": "^18.2.9",
+    "mysql2": "^3.24.4",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.5.2",
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.3.0"
+  }
+}

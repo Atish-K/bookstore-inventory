@@ -1,0 +1,13 @@
+<div class="toast-stack" aria-live="polite">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div class="toast" [class.toast-error]="toast.type === 'error'">
+      <span class="toast-icon">
+        <app-icon [name]="toast.type === 'error' ? 'alert' : 'check'" [size]="16" />
+      </span>
+      <span class="toast-message">{{ toast.message }}</span>
+      <button type="button" class="toast-close" (click)="toastService.dismiss(toast.id)" aria-label="Close">
+        <app-icon name="close" [size]="14" />
+      </button>
+    </div>
+  }
+</div>

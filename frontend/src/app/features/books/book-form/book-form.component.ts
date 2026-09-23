@@ -1,15 +1,19 @@
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiError } from '../../../core/models/api.model';
 import { AuthorListItem } from '../../../core/models/author.model';
 import { AuthorService } from '../../../core/services/author.service';
 import { BookService } from '../../../core/services/book.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { greaterThan, isbn, requiredText, wholeNumber } from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-book-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, IconComponent],
   templateUrl: './book-form.component.html',
   styleUrl: './book-form.component.css'
 })
@@ -17,6 +21,7 @@ export class BookFormComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private bookService = inject(BookService);
   private authorService = inject(AuthorService);
+  private toast = inject(ToastService);
   private router = inject(Router);
 
   // from the query param, eg. /books/new?authorId=3 (opened from author page)
@@ -35,6 +40,21 @@ export class BookFormComponent implements OnInit {
     price: this.fb.control<number | null>(null, [Validators.required, greaterThan(0)]),
     stock: this.fb.control<number | null>(0, [Validators.required, Validators.min(0), wholeNumber]),
     authorId: this.fb.control<number | null>(null, Validators.required)
+  });
+
+  // live preview card on the right side of the form
+  private formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  preview = computed(() => {
+    const value = this.formValue();
+    const title = value.title?.trim() || 'Book title';
+    const author = this.authors().find((a) => a.id === value.authorId);
+    return {
+      title,
+      author: author?.name ?? 'Author name',
+      price: value.price ?? null,
+      stock: value.stock ?? 0
+    };
   });
 
   ngOnInit() {
@@ -80,7 +100,10 @@ export class BookFormComponent implements OnInit {
         authorId: value.authorId!
       })
       .subscribe({
-        next: () => this.router.navigate(['/books']),
+        next: (book) => {
+          this.toast.success(`"${book.title}" was added`);
+          this.router.navigate(['/books']);
+        },
         error: (err: ApiError) => {
           this.saving.set(false);
           this.showApiError(err);
@@ -94,9 +117,17 @@ export class BookFormComponent implements OnInit {
       return null;
     }
 
+    const requiredMessages = {
+      title: 'Title is required',
+      isbn: 'ISBN is required',
+      price: 'Price is required',
+      stock: 'Stock is required',
+      authorId: 'Please select an author'
+    };
+
     const errors = control.errors;
     if (errors['server']) return errors['server'];
-    if (errors['required']) return 'This field is required';
+    if (errors['required']) return requiredMessages[name];
     if (errors['maxlength']) return `Maximum ${errors['maxlength'].requiredLength} characters`;
     if (errors['isbn']) return 'ISBN must have 10 or 13 digits';
     if (errors['greaterThan']) return 'Price must be greater than 0';

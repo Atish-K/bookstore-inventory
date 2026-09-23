@@ -1,28 +1,47 @@
-.filters {
+/* ---------- toolbar ---------- */
+
+.price {
+  width: 140px;
+}
+
+/* same height as the search box and the stock filter */
+.price input {
+  height: 36px;
+}
+
+/* ---------- table ---------- */
+
+app-book-table {
+  display: block;
+  transition: opacity 0.15s;
+}
+
+app-book-table.refreshing {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* skeleton rows while the first load is running */
+.book {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  align-items: center;
+  gap: 14px;
 }
 
-.filters label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--text-muted);
+/* ---------- loading ---------- */
+
+.skeleton-cover {
+  background: #eef1f6;
+  box-shadow: none;
 }
 
-.filters input {
-  width: 130px;
+.skeleton-cover::after {
+  display: none;
 }
 
-.isbn {
-  font-family: monospace;
-  font-size: 13px;
+@media (max-width: 700px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

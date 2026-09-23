@@ -1,12 +1,23 @@
-<header class="topbar">
-  <div class="container topbar-inner">
-    <a routerLink="/books" class="brand">Bookstore Inventory</a>
-    <nav>
-      <a routerLink="/books" routerLinkActive="active">Books</a>
-    </nav>
-  </div>
-</header>
+<div class="shell">
+  <header class="topbar">
+    <a routerLink="/books" class="brand">
+      <span class="brand-logo">
+        <app-icon name="book" [size]="16" />
+      </span>
+      Bookstore
+    </a>
 
-<main class="container">
-  <router-outlet />
-</main>
+    <nav class="tabs">
+      <a routerLink="/books" routerLinkActive="active">Books</a>
+      <a routerLink="/authors" routerLinkActive="active">Authors</a>
+    </nav>
+
+    <span class="topbar-spacer"></span>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+</div>
+
+<app-toast />

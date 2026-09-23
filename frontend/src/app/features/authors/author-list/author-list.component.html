@@ -1,0 +1,134 @@
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Inventory</p>
+    <h1>Authors</h1>
+    <p class="page-subtitle">Writers in your catalogue and how many of their books you carry</p>
+  </div>
+  <a routerLink="/authors/new" class="btn btn-primary">
+    <app-icon name="plus" [size]="17" />
+    Add author
+  </a>
+</div>
+
+@if (!error()) {
+  <section class="stats three" [class.pending]="loading() && authors().length === 0">
+    <div class="stat hero">
+      <div class="stat-top">
+        <span class="stat-label">Authors</span>
+        <span class="stat-icon"><app-icon name="users" /></span>
+      </div>
+      <p class="stat-value">{{ stats().authors }}</p>
+      <p class="stat-foot">In your catalogue</p>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Books written</span>
+        <span class="stat-icon indigo"><app-icon name="book" /></span>
+      </div>
+      <p class="stat-value">{{ stats().books }}</p>
+      <p class="stat-foot">Titles in the inventory</p>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Without books</span>
+        <span class="stat-icon orange"><app-icon name="warning" /></span>
+      </div>
+      <p class="stat-value">{{ stats().withoutBooks }}</p>
+      <p class="stat-foot">Only these can be deleted</p>
+    </div>
+  </section>
+}
+
+<section class="card panel">
+  <div class="toolbar">
+    <label class="search">
+      <app-icon name="search" [size]="17" />
+      <input
+        type="search"
+        placeholder="Search authors"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </label>
+    @if (!loading() || authors().length) {
+      <div class="toolbar-end">
+        <span class="count">{{ visibleAuthors().length }} {{ visibleAuthors().length === 1 ? 'author' : 'authors' }}</span>
+      </div>
+    }
+  </div>
+
+  @if (loading() && authors().length === 0 && !error()) {
+    <div class="grid">
+      @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+        <div class="author-card">
+          <div class="card-top">
+            <span class="avatar lg skeleton-avatar"></span>
+            <div>
+              <span class="skeleton" style="width: 140px"></span>
+              <span class="skeleton" style="width: 80px; margin-top: 8px"></span>
+            </div>
+          </div>
+          <span class="skeleton" style="width: 100%; margin-top: 18px"></span>
+          <span class="skeleton" style="width: 70%; margin-top: 8px"></span>
+        </div>
+      }
+    </div>
+  } @else if (error()) {
+    <div class="state-box">
+      <div class="alert alert-error">
+        <app-icon name="alert" [size]="18" />
+        <div class="alert-body">
+          <p class="alert-title">Unable to load authors</p>
+          <p>{{ error() }}</p>
+        </div>
+        <button type="button" class="btn btn-sm" (click)="load()">
+          <app-icon name="refresh" [size]="15" />
+          Try again
+        </button>
+      </div>
+    </div>
+  } @else if (visibleAuthors().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon"><app-icon name="users" [size]="24" /></span>
+      @if (search().trim()) {
+        <h3>No authors found</h3>
+        <p>No author matches "{{ search() }}".</p>
+        <button type="button" class="btn" (click)="search.set('')">Clear search</button>
+      } @else {
+        <h3>No authors yet</h3>
+        <p>Add an author first, then you can add their books.</p>
+        <a routerLink="/authors/new" class="btn btn-primary">
+          <app-icon name="plus" [size]="17" />
+          Add author
+        </a>
+      }
+    </div>
+  } @else {
+    <div class="grid">
+      @for (author of visibleAuthors(); track author.id) {
+        <a class="author-card" [routerLink]="['/authors', author.id]">
+          <div class="card-top">
+            <span class="avatar lg" [style.background]="avatar(author).background" [style.color]="avatar(author).color">
+              {{ initials(author.name) }}
+            </span>
+            <div class="name-block">
+              <p class="name">{{ author.name }}</p>
+              @if (author.bookCount > 0) {
+                <span class="chip chip-indigo">{{ author.bookCount }} {{ author.bookCount === 1 ? 'book' : 'books' }}</span>
+              } @else {
+                <span class="chip chip-gray">No books yet</span>
+              }
+            </div>
+          </div>
+          <p class="bio">{{ author.bio || 'No bio added yet.' }}</p>
+          <span class="view">
+            View profile
+            <app-icon name="arrow-right" [size]="14" class="arrow" />
+          </span>
+        </a>
+      }
+    </div>
+  }
+</section>

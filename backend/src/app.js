@@ -11,7 +11,7 @@ const errorHandler = require('./middlewares/error.middleware');
 const app = express();
 
 // frontend urls allowed to call the api, comma separated in .env
-// eg. CORS_ORIGIN=http://localhost:4200,https://bookstore.example.com
+// eg. CORS_ORIGIN=http://localhost:4200
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200')
   .split(',')
   .map((origin) => origin.trim());

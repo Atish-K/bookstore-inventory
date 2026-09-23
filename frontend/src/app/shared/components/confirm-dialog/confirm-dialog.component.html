@@ -1,0 +1,35 @@
+<dialog
+  #dialog
+  class="dialog"
+  role="alertdialog"
+  (close)="closed.emit()"
+  (cancel)="onCancel($event)"
+  (click)="onDialogClick($event)"
+>
+  <div class="dialog-body">
+    <span class="danger-icon">
+      <app-icon name="trash" [size]="22" />
+    </span>
+    <h2>{{ title() }}</h2>
+    <p class="message">{{ message() }}</p>
+
+    @if (error()) {
+      <div class="alert alert-error" role="alert">
+        <app-icon name="alert" [size]="18" />
+        <div class="alert-body">
+          <p class="alert-title">Could not complete this</p>
+          <p>{{ error() }}</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="dialog-footer">
+    <button type="button" class="btn" (click)="close()" [disabled]="busy()">
+      {{ error() ? 'Close' : 'Cancel' }}
+    </button>
+    <button type="button" class="btn btn-danger" (click)="confirmed.emit()" [disabled]="busy()">
+      {{ busy() ? 'Please wait...' : confirmLabel() }}
+    </button>
+  </div>
+</dialog>

@@ -1,0 +1,113 @@
+<a routerLink="/authors" class="back-link">
+  <app-icon name="arrow-left" [size]="15" />
+  Back to authors
+</a>
+
+@if (author(); as author) {
+  <section class="card profile">
+    <span class="avatar xl" [style.background]="avatar(author).background" [style.color]="avatar(author).color">
+      {{ initials(author.name) }}
+    </span>
+    <div class="profile-text">
+      <p class="eyebrow">Author</p>
+      <h1>{{ author.name }}</h1>
+      <p class="bio" [class.empty]="!author.bio">{{ author.bio || 'No bio added for this author.' }}</p>
+    </div>
+    <div class="profile-actions">
+      <a class="btn btn-primary" [routerLink]="['/books/new']" [queryParams]="{ authorId: author.id }">
+        <app-icon name="plus" [size]="17" />
+        Add book
+      </a>
+      <button type="button" class="btn btn-soft-danger" (click)="openDelete()">
+        <app-icon name="trash" [size]="16" />
+        Delete
+      </button>
+    </div>
+  </section>
+
+  <section class="stats three">
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Books</span>
+        <span class="stat-icon indigo"><app-icon name="book" /></span>
+      </div>
+      <p class="stat-value">{{ stats().books }}</p>
+      <p class="stat-foot">Titles by {{ author.name }}</p>
+    </div>
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Units in stock</span>
+        <span class="stat-icon cyan"><app-icon name="package" /></span>
+      </div>
+      <p class="stat-value">{{ stats().units | number }}</p>
+      <p class="stat-foot">Copies across their books</p>
+    </div>
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Stock value</span>
+        <span class="stat-icon orange"><app-icon name="rupee" /></span>
+      </div>
+      <p class="stat-value">{{ stats().value | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
+      <p class="stat-foot">At selling price</p>
+    </div>
+  </section>
+
+  <section class="card panel">
+    <div class="toolbar">
+      <div>
+        <p class="card-title">Books</p>
+        <p class="card-subtitle">Everything by {{ author.name }} in the inventory</p>
+      </div>
+      <div class="toolbar-end">
+        <span class="count">{{ author.books.length }} {{ author.books.length === 1 ? 'book' : 'books' }}</span>
+      </div>
+    </div>
+
+    @if (author.books.length) {
+      <app-book-table [books]="author.books" (stockChanged)="onStockChanged($event)" />
+    } @else {
+      <div class="empty-state">
+        <span class="empty-icon"><app-icon name="book" [size]="24" /></span>
+        <h3>No books yet</h3>
+        <p>Books you add for {{ author.name }} will show up here.</p>
+        <a class="btn btn-primary" [routerLink]="['/books/new']" [queryParams]="{ authorId: author.id }">
+          <app-icon name="plus" [size]="17" />
+          Add book
+        </a>
+      </div>
+    }
+  </section>
+
+  @if (confirmingDelete()) {
+    <app-confirm-dialog
+      [title]="'Delete ' + author.name + '?'"
+      message="The author will be removed permanently. This cannot be undone."
+      confirmLabel="Delete author"
+      [busy]="deleting()"
+      [error]="deleteError()"
+      (confirmed)="deleteAuthor()"
+      (closed)="confirmingDelete.set(false)"
+    />
+  }
+} @else if (loading()) {
+  <section class="card profile">
+    <span class="avatar xl skeleton-avatar"></span>
+    <div class="profile-text">
+      <span class="skeleton" style="width: 90px"></span>
+      <span class="skeleton" style="width: 260px; height: 22px; margin-top: 12px"></span>
+      <span class="skeleton" style="width: 380px; margin-top: 14px"></span>
+    </div>
+  </section>
+} @else if (error()) {
+  <div class="alert alert-error">
+    <app-icon name="alert" [size]="18" />
+    <div class="alert-body">
+      <p class="alert-title">Unable to load this author</p>
+      <p>{{ error() }}</p>
+    </div>
+    <button type="button" class="btn btn-sm" (click)="load()">
+      <app-icon name="refresh" [size]="15" />
+      Try again
+    </button>
+  </div>
+}

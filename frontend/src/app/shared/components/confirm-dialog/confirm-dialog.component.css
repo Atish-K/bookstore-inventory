@@ -1,0 +1,71 @@
+.dialog {
+  width: min(380px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+}
+
+.dialog::backdrop {
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(3px);
+}
+
+.dialog[open] {
+  animation: pop-in 0.18s ease-out;
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 22px 16px;
+  text-align: center;
+}
+
+.danger-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.message {
+  color: var(--text-muted);
+}
+
+.alert {
+  width: 100%;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.dialog-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 22px 22px;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

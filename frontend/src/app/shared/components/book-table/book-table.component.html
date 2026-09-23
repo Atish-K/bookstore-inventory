@@ -1,0 +1,98 @@
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Book</th>
+        @if (authorNames()) {
+          <th>Author</th>
+        }
+        <th>Price</th>
+        <th>Stock</th>
+        <th class="right">Quick adjust</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (book of books(); track book.id) {
+        <tr>
+          <td>
+            <div class="book">
+              <span class="cover" [style.background]="cover(book)"></span>
+              <div>
+                <p class="book-title">{{ book.title }}</p>
+                <p class="book-isbn">ISBN {{ book.isbn }}</p>
+              </div>
+            </div>
+          </td>
+          @if (authorNames()) {
+            <td>
+              <a [routerLink]="['/authors', book.authorId]" class="author">
+                <span
+                  class="avatar"
+                  [style.background]="avatar(book.authorId).background"
+                  [style.color]="avatar(book.authorId).color"
+                >
+                  {{ authorInitials(book.authorId) }}
+                </span>
+                {{ authorName(book.authorId) }}
+              </a>
+            </td>
+          }
+          <td class="price-cell">{{ book.price | currency: 'INR' : 'symbol' : '1.0-2' }}</td>
+          <td class="stock-cell">
+            <div class="stock-line">
+              @switch (stockStatus(book)) {
+                @case ('out') { <span class="status red">Out of stock</span> }
+                @case ('low') { <span class="status amber">Low stock</span> }
+                @default { <span class="status green">In stock</span> }
+              }
+              <span class="units">{{ book.stock }} {{ book.stock === 1 ? 'unit' : 'units' }}</span>
+            </div>
+            <div class="meter">
+              <span [class]="'meter-' + stockStatus(book)" [style.width.%]="stockPercent(book)"></span>
+            </div>
+            @if (rowError()?.bookId === book.id) {
+              <p class="row-error">{{ rowError()?.message }}</p>
+            }
+          </td>
+          <td class="right">
+            <div class="quick">
+              <button
+                type="button"
+                class="icon-btn"
+                (click)="quickAdjust(book, -1)"
+                [disabled]="savingIds().has(book.id)"
+                title="Remove 1 from stock"
+                aria-label="Remove 1 from stock"
+              >
+                <app-icon name="minus" [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="icon-btn"
+                (click)="quickAdjust(book, 1)"
+                [disabled]="savingIds().has(book.id)"
+                title="Add 1 to stock"
+                aria-label="Add 1 to stock"
+              >
+                <app-icon name="plus" [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="icon-btn ghost"
+                (click)="adjusting.set(book)"
+                title="Add or remove a custom amount"
+                aria-label="Add or remove a custom amount"
+              >
+                <app-icon name="more" [size]="18" />
+              </button>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (adjusting(); as book) {
+  <app-stock-dialog [book]="book" (updated)="stockChanged.emit($event)" (closed)="adjusting.set(null)" />
+}

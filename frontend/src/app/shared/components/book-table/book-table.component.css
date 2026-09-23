@@ -1,0 +1,102 @@
+.book {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.book-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.book-isbn {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.author:hover {
+  color: var(--primary);
+}
+
+.price-cell {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-cell {
+  width: 190px;
+}
+
+.stock-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.status.green {
+  color: var(--green);
+}
+
+.status.amber {
+  color: var(--amber);
+}
+
+.status.red {
+  color: var(--red);
+}
+
+.units {
+  font-variant-numeric: tabular-nums;
+}
+
+.meter {
+  height: 5px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.meter-ok {
+  background: var(--green-bar);
+}
+
+.meter-low {
+  background: var(--amber-bar);
+}
+
+.meter-out {
+  background: var(--red-bar);
+}
+
+.row-error {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.quick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

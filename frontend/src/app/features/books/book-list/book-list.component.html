@@ -1,79 +1,167 @@
 <div class="page-header">
-  <h1>Books</h1>
-  <a routerLink="/books/new" class="btn btn-primary">+ Add book</a>
+  <div>
+    <p class="eyebrow">Inventory</p>
+    <h1>Books</h1>
+    <p class="page-subtitle">Track titles, prices and stock across your store</p>
+  </div>
+  <div class="header-actions">
+    <button type="button" class="btn" (click)="exportCsv()" [disabled]="visibleBooks().length === 0">
+      <app-icon name="download" [size]="17" />
+      Export
+    </button>
+    <a routerLink="/books/new" class="btn btn-primary">
+      <app-icon name="plus" [size]="17" />
+      Add book
+    </a>
+  </div>
 </div>
 
-<form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-  <label>
-    Stock
-    <select formControlName="stock">
-      <option value="all">All books</option>
-      <option value="in">In stock only</option>
-      <option value="out">Out of stock only</option>
-    </select>
-  </label>
+<!-- hidden when loading failed, otherwise it would show 0 for everything -->
+@if (!error()) {
+  <section class="stats" [class.pending]="loading() && books().length === 0">
+    <div class="stat hero">
+      <div class="stat-top">
+        <span class="stat-label">Stock value</span>
+        <span class="stat-icon"><app-icon name="rupee" /></span>
+      </div>
+      <p class="stat-value">{{ stats().value | currency: 'INR' : 'symbol' : '1.0-0' }}</p>
+      <p class="stat-foot">
+        <span class="chip hero-chip">{{ stats().units | number }} units</span>
+        across {{ stats().titles }} titles
+      </p>
+    </div>
 
-  <label>
-    Min price (₹)
-    <input type="number" min="0" step="1" formControlName="minPrice" placeholder="e.g. 200" />
-  </label>
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Titles</span>
+        <span class="stat-icon indigo"><app-icon name="book" /></span>
+      </div>
+      <p class="stat-value">{{ stats().titles }}</p>
+      <p class="stat-foot">From {{ stats().authors }} authors</p>
+    </div>
 
-  <button type="submit" class="btn btn-primary" [disabled]="loading() || filterForm.invalid">Apply</button>
-  <button type="button" class="btn" (click)="clearFilters()" [disabled]="loading()">Clear</button>
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Units in stock</span>
+        <span class="stat-icon cyan"><app-icon name="package" /></span>
+      </div>
+      <p class="stat-value">{{ stats().units | number }}</p>
+      <p class="stat-foot">Average {{ stats().average | number: '1.0-1' }} per title</p>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Needs restock</span>
+        <span class="stat-icon orange"><app-icon name="warning" /></span>
+      </div>
+      <p class="stat-value">{{ stats().low + stats().out }}</p>
+      <p class="stat-foot">
+        <span class="chip chip-red">{{ stats().out }} out</span>
+        <span class="chip chip-amber">{{ stats().low }} low</span>
+      </p>
+    </div>
+  </section>
+}
+
+<section class="card panel">
+  <form class="toolbar" [formGroup]="filterForm" (ngSubmit)="loadBooks()">
+    <label class="search">
+      <app-icon name="search" [size]="17" />
+      <input
+        type="search"
+        placeholder="Search books, ISBN or author"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+    </label>
+
+    <div class="segmented" role="group" aria-label="Stock filter">
+      <button type="button" [class.active]="filterForm.controls.stock.value === 'all'" (click)="setStockFilter('all')">All</button>
+      <button type="button" [class.active]="filterForm.controls.stock.value === 'in'" (click)="setStockFilter('in')">In stock</button>
+      <button type="button" [class.active]="filterForm.controls.stock.value === 'out'" (click)="setStockFilter('out')">Out of stock</button>
+    </div>
+
+    <div class="input-group price">
+      <span class="prefix">₹</span>
+      <input type="number" min="0" formControlName="minPrice" placeholder="Min price" aria-label="Minimum price" />
+    </div>
+
+    <div class="toolbar-end">
+      @if (hasFilters()) {
+        <button type="button" class="btn-link" (click)="clearFilters()">Clear filters</button>
+      }
+      @if (!loading() || books().length) {
+        <span class="count">{{ visibleBooks().length }} {{ visibleBooks().length === 1 ? 'book' : 'books' }}</span>
+      }
+    </div>
+  </form>
 
   @if (filterForm.controls.minPrice.invalid) {
-    <span class="field-error">Min price cannot be negative</span>
+    <p class="note note-error">Min price cannot be negative</p>
   }
-</form>
+  @if (authorsError() && !error()) {
+    <p class="note note-warning">Author names could not be loaded: {{ authorsError() }}</p>
+  }
 
-@if (authorsError() && !error()) {
-  <p class="alert alert-warning">Could not load author names: {{ authorsError() }}</p>
-}
-
-@if (loading()) {
-  <p class="loading">Loading books...</p>
-} @else if (error()) {
-  <div class="alert alert-error">
-    <span>Unable to load books: {{ error() }}</span>
-    <button type="button" class="btn btn-small" (click)="reload()">Try again</button>
-  </div>
-} @else if (books().length === 0) {
-  <p class="empty">No books found for these filters.</p>
-} @else {
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>ISBN</th>
-        <th>Author</th>
-        <th class="num">Price</th>
-        <th class="num">Stock</th>
-        <th>Update stock</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (book of books(); track book.id) {
-        <tr>
-          <td>{{ book.title }}</td>
-          <td class="isbn">{{ book.isbn }}</td>
-          <td>
-            <a [routerLink]="['/authors', book.authorId]">
-              {{ authorNames().get(book.authorId) ?? 'Author #' + book.authorId }}
-            </a>
-          </td>
-          <td class="num">{{ book.price | currency: 'INR' }}</td>
-          <td class="num">
-            @if (book.stock === 0) {
-              <span class="badge badge-out">Out of stock</span>
-            } @else {
-              {{ book.stock }}
-            }
-          </td>
-          <td>
-            <app-stock-control [book]="book" (stockChanged)="onStockChanged($event)" />
-          </td>
-        </tr>
+  @if (loading() && books().length === 0 && !error()) {
+    <div class="table-wrap">
+      <table class="table">
+        <tbody>
+          @for (row of [1, 2, 3, 4, 5]; track row) {
+            <tr>
+              <td>
+                <div class="book">
+                  <span class="cover skeleton-cover"></span>
+                  <div>
+                    <span class="skeleton" style="width: 170px"></span>
+                    <span class="skeleton" style="width: 110px; margin-top: 8px"></span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="skeleton" style="width: 130px"></span></td>
+              <td><span class="skeleton" style="width: 50px"></span></td>
+              <td><span class="skeleton" style="width: 150px"></span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (error()) {
+    <div class="state-box">
+      <div class="alert alert-error">
+        <app-icon name="alert" [size]="18" />
+        <div class="alert-body">
+          <p class="alert-title">Unable to load books</p>
+          <p>{{ error() }}</p>
+        </div>
+        <button type="button" class="btn btn-sm" (click)="reload()">
+          <app-icon name="refresh" [size]="15" />
+          Try again
+        </button>
+      </div>
+    </div>
+  } @else if (visibleBooks().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon"><app-icon name="search" [size]="24" /></span>
+      @if (hasFilters()) {
+        <h3>No books match your filters</h3>
+        <p>Try a different search, or clear the filters to see everything.</p>
+        <button type="button" class="btn" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <h3>No books yet</h3>
+        <p>Add your first book to start tracking stock.</p>
+        <a routerLink="/books/new" class="btn btn-primary">
+          <app-icon name="plus" [size]="17" />
+          Add book
+        </a>
       }
-    </tbody>
-  </table>
-}
+    </div>
+  } @else {
+    <app-book-table
+      [class.refreshing]="loading()"
+      [books]="visibleBooks()"
+      [authorNames]="authorNames()"
+      (stockChanged)="onStockChanged($event)"
+    />
+  }
+</section>

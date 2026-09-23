@@ -1,77 +1,119 @@
+<a routerLink="/books" class="back-link">
+  <app-icon name="arrow-left" [size]="15" />
+  Back to books
+</a>
+
 <div class="page-header">
-  <h1>Add book</h1>
+  <div>
+    <p class="eyebrow">New book</p>
+    <h1>Add a book</h1>
+    <p class="page-subtitle">Add a new title to the inventory</p>
+  </div>
 </div>
 
-<form class="card form" [formGroup]="form" (ngSubmit)="save()" novalidate>
-  @if (error()) {
-    <p class="alert alert-error">{{ error() }}</p>
-  }
+<div class="layout">
+  <form class="card" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="card-body">
+      <p class="card-title">Book details</p>
+      <p class="card-subtitle">All fields are required except opening stock</p>
 
-  <div class="field">
-    <label for="title">Title *</label>
-    <input id="title" type="text" formControlName="title" />
-    @if (errorFor('title'); as message) {
-      <span class="field-error">{{ message }}</span>
-    }
-  </div>
-
-  <div class="field">
-    <label for="isbn">ISBN *</label>
-    <input id="isbn" type="text" formControlName="isbn" placeholder="978-81-7371-146-6" />
-    @if (errorFor('isbn'); as message) {
-      <span class="field-error">{{ message }}</span>
-    } @else {
-      <span class="hint">10 or 13 digits, hyphens are fine</span>
-    }
-  </div>
-
-  <div class="row">
-    <div class="field">
-      <label for="price">Price (₹) *</label>
-      <input id="price" type="number" min="0.01" step="0.01" formControlName="price" />
-      @if (errorFor('price'); as message) {
-        <span class="field-error">{{ message }}</span>
+      @if (error()) {
+        <div class="alert alert-error form-alert" role="alert">
+          <app-icon name="alert" [size]="18" />
+          <p class="alert-body">{{ error() }}</p>
+        </div>
       }
-    </div>
 
-    <div class="field">
-      <label for="stock">Stock</label>
-      <input id="stock" type="number" min="0" step="1" formControlName="stock" />
-      @if (errorFor('stock'); as message) {
-        <span class="field-error">{{ message }}</span>
-      }
-    </div>
-  </div>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="title">Title</label>
+          <input id="title" type="text" formControlName="title" placeholder="e.g. The Palace of Illusions" />
+          @if (errorFor('title'); as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </div>
 
-  <div class="field">
-    <label for="authorId">Author *</label>
-    @if (authorsError()) {
-      <div class="alert alert-error">
-        <span>Unable to load authors: {{ authorsError() }}</span>
-        <button type="button" class="btn btn-small" (click)="loadAuthors()">Try again</button>
+        <div class="field full">
+          <label for="isbn">ISBN</label>
+          <input id="isbn" type="text" formControlName="isbn" placeholder="978-81-7371-146-6" />
+          @if (errorFor('isbn'); as message) {
+            <span class="field-error">{{ message }}</span>
+          } @else {
+            <span class="hint">10 or 13 digits, hyphens are fine</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="price">Price</label>
+          <div class="input-group">
+            <span class="prefix">₹</span>
+            <input id="price" type="number" min="0.01" step="0.01" formControlName="price" placeholder="0.00" />
+          </div>
+          @if (errorFor('price'); as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="stock">Opening stock <span class="optional">(optional)</span></label>
+          <input id="stock" type="number" min="0" step="1" formControlName="stock" />
+          @if (errorFor('stock'); as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </div>
+
+        <div class="field full">
+          <label for="authorId">Author</label>
+          @if (authorsError()) {
+            <div class="alert alert-error">
+              <app-icon name="alert" [size]="18" />
+              <p class="alert-body">Unable to load authors: {{ authorsError() }}</p>
+              <button type="button" class="btn btn-sm" (click)="loadAuthors()">Try again</button>
+            </div>
+          } @else {
+            <select id="authorId" formControlName="authorId">
+              <option [ngValue]="null" disabled>
+                {{ authorsLoading() ? 'Loading authors...' : 'Select an author' }}
+              </option>
+              @for (author of authors(); track author.id) {
+                <option [ngValue]="author.id">{{ author.name }}</option>
+              }
+            </select>
+            @if (errorFor('authorId'); as message) {
+              <span class="field-error">{{ message }}</span>
+            }
+            @if (!authorsLoading() && authors().length === 0) {
+              <span class="hint">No authors yet, <a routerLink="/authors/new">add an author</a> first.</span>
+            }
+          }
+        </div>
       </div>
-    } @else {
-      <select id="authorId" formControlName="authorId">
-        <option [ngValue]="null" disabled>
-          {{ authorsLoading() ? 'Loading authors...' : 'Select an author' }}
-        </option>
-        @for (author of authors(); track author.id) {
-          <option [ngValue]="author.id">{{ author.name }}</option>
-        }
-      </select>
-      @if (errorFor('authorId'); as message) {
-        <span class="field-error">{{ message }}</span>
-      }
-      @if (!authorsLoading() && authors().length === 0) {
-        <span class="hint">No authors yet, <a routerLink="/authors/new">add an author</a> first.</span>
-      }
-    }
-  </div>
+    </div>
 
-  <div class="actions">
-    <button type="submit" class="btn btn-primary" [disabled]="saving()">
-      {{ saving() ? 'Saving...' : 'Save book' }}
-    </button>
-    <a routerLink="/books" class="btn">Cancel</a>
-  </div>
-</form>
+    <div class="card-footer">
+      <a routerLink="/books" class="btn">Cancel</a>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Saving...' : 'Save book' }}
+      </button>
+    </div>
+  </form>
+
+  <aside class="preview card">
+    <p class="preview-label">Live preview</p>
+    <div class="preview-row">
+      <div class="preview-cover">
+        <p class="preview-cover-title">{{ preview().title }}</p>
+      </div>
+      <div class="preview-info">
+        <p class="preview-title">{{ preview().title }}</p>
+        <p class="preview-author">{{ preview().author }}</p>
+        <p class="preview-price">
+          {{ preview().price !== null ? (preview().price | currency: 'INR' : 'symbol' : '1.0-2') : '₹ --' }}
+        </p>
+        <span class="chip" [class.chip-green]="preview().stock > 0" [class.chip-red]="!(preview().stock > 0)">
+          {{ preview().stock > 0 ? preview().stock + ' in stock' : 'Out of stock' }}
+        </span>
+      </div>
+    </div>
+  </aside>
+</div>

@@ -1,0 +1,75 @@
+<a routerLink="/authors" class="back-link">
+  <app-icon name="arrow-left" [size]="15" />
+  Back to authors
+</a>
+
+<div class="page-header">
+  <div>
+    <p class="eyebrow">New author</p>
+    <h1>Add an author</h1>
+    <p class="page-subtitle">Once the author exists you can add their books</p>
+  </div>
+</div>
+
+<div class="layout">
+  <form class="card" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="card-body">
+      <p class="card-title">Author details</p>
+      <p class="card-subtitle">Only the name is required</p>
+
+      @if (error()) {
+        <div class="alert alert-error form-alert" role="alert">
+          <app-icon name="alert" [size]="18" />
+          <p class="alert-body">{{ error() }}</p>
+        </div>
+      }
+
+      <div class="fields">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" type="text" formControlName="name" placeholder="e.g. Ruskin Bond" />
+          @if (errorFor('name'); as message) {
+            <span class="field-error">{{ message }}</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="bio">Bio <span class="optional">(optional)</span></label>
+          <textarea
+            id="bio"
+            rows="5"
+            formControlName="bio"
+            placeholder="A few lines about the author"
+          ></textarea>
+          <div class="bio-foot">
+            @if (errorFor('bio'); as message) {
+              <span class="field-error">{{ message }}</span>
+            } @else {
+              <span class="hint">Shown on the author page</span>
+            }
+            <span class="hint" [class.over]="bioLength() > bioMax">{{ bioLength() }} / {{ bioMax }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <a routerLink="/authors" class="btn">Cancel</a>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Saving...' : 'Save author' }}
+      </button>
+    </div>
+  </form>
+
+  <aside class="preview card">
+    <p class="preview-label">Live preview</p>
+    <div class="preview-top">
+      <span class="avatar preview-avatar">{{ preview().initials }}</span>
+      <div>
+        <p class="preview-name">{{ preview().name }}</p>
+        <span class="chip preview-chip">No books yet</span>
+      </div>
+    </div>
+    <p class="preview-bio">{{ preview().bio }}</p>
+  </aside>
+</div>

@@ -25,6 +25,15 @@ function getErrorInfo(err) {
     return { status: 400, message: 'Request body is not valid JSON' };
   }
 
+  // procedures check these first, but if two requests hit at the same time
+  // the unique index / foreign key in the db can still reject one of them
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    return { status: 409, message: 'This record already exists' };
+  }
+  if (err.name === 'SequelizeForeignKeyConstraintError') {
+    return { status: 409, message: 'This record is linked to other data and cannot be changed' };
+  }
+
   // unknown error - log it, but don't send internal details to the client
   return { status: 500, message: 'Something went wrong on the server' };
 }

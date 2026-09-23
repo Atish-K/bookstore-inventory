@@ -58,10 +58,9 @@ module.exports = {
     }
   },
 
+  // clears everything, books added from the UI would otherwise block deleting the authors
   async down(queryInterface) {
-    const isbns = authors.flatMap((author) => author.books.map((book) => book.isbn));
-
-    await queryInterface.bulkDelete('books', { isbn: isbns });
-    await queryInterface.bulkDelete('authors', { name: authors.map((author) => author.name) });
+    await queryInterface.bulkDelete('books', null, {});
+    await queryInterface.bulkDelete('authors', null, {});
   },
 };

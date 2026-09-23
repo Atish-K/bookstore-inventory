@@ -1,0 +1,77 @@
+<div class="page-header">
+  <h1>Add book</h1>
+</div>
+
+<form class="card form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+  @if (error()) {
+    <p class="alert alert-error">{{ error() }}</p>
+  }
+
+  <div class="field">
+    <label for="title">Title *</label>
+    <input id="title" type="text" formControlName="title" />
+    @if (errorFor('title'); as message) {
+      <span class="field-error">{{ message }}</span>
+    }
+  </div>
+
+  <div class="field">
+    <label for="isbn">ISBN *</label>
+    <input id="isbn" type="text" formControlName="isbn" placeholder="978-81-7371-146-6" />
+    @if (errorFor('isbn'); as message) {
+      <span class="field-error">{{ message }}</span>
+    } @else {
+      <span class="hint">10 or 13 digits, hyphens are fine</span>
+    }
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="price">Price (₹) *</label>
+      <input id="price" type="number" min="0.01" step="0.01" formControlName="price" />
+      @if (errorFor('price'); as message) {
+        <span class="field-error">{{ message }}</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="stock">Stock</label>
+      <input id="stock" type="number" min="0" step="1" formControlName="stock" />
+      @if (errorFor('stock'); as message) {
+        <span class="field-error">{{ message }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="authorId">Author *</label>
+    @if (authorsError()) {
+      <div class="alert alert-error">
+        <span>Unable to load authors: {{ authorsError() }}</span>
+        <button type="button" class="btn btn-small" (click)="loadAuthors()">Try again</button>
+      </div>
+    } @else {
+      <select id="authorId" formControlName="authorId">
+        <option [ngValue]="null" disabled>
+          {{ authorsLoading() ? 'Loading authors...' : 'Select an author' }}
+        </option>
+        @for (author of authors(); track author.id) {
+          <option [ngValue]="author.id">{{ author.name }}</option>
+        }
+      </select>
+      @if (errorFor('authorId'); as message) {
+        <span class="field-error">{{ message }}</span>
+      }
+      @if (!authorsLoading() && authors().length === 0) {
+        <span class="hint">No authors yet, <a routerLink="/authors/new">add an author</a> first.</span>
+      }
+    }
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : 'Save book' }}
+    </button>
+    <a routerLink="/books" class="btn">Cancel</a>
+  </div>
+</form>

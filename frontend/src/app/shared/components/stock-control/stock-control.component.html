@@ -1,0 +1,20 @@
+<div class="stock-control">
+  <button type="button" (click)="update(-1)" [disabled]="saving()" title="Remove from stock">−</button>
+  <input
+    type="number"
+    min="1"
+    step="1"
+    [(ngModel)]="quantity"
+    [disabled]="saving()"
+    aria-label="Quantity"
+  />
+  <button type="button" (click)="update(1)" [disabled]="saving()" title="Add to stock">+</button>
+
+  @if (saving()) {
+    <span class="saving">Saving...</span>
+  }
+</div>
+
+@if (error()) {
+  <p class="stock-error">{{ error() }}</p>
+}

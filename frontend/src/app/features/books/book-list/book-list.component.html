@@ -1,0 +1,79 @@
+<div class="page-header">
+  <h1>Books</h1>
+  <a routerLink="/books/new" class="btn btn-primary">+ Add book</a>
+</div>
+
+<form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+  <label>
+    Stock
+    <select formControlName="stock">
+      <option value="all">All books</option>
+      <option value="in">In stock only</option>
+      <option value="out">Out of stock only</option>
+    </select>
+  </label>
+
+  <label>
+    Min price (₹)
+    <input type="number" min="0" step="1" formControlName="minPrice" placeholder="e.g. 200" />
+  </label>
+
+  <button type="submit" class="btn btn-primary" [disabled]="loading() || filterForm.invalid">Apply</button>
+  <button type="button" class="btn" (click)="clearFilters()" [disabled]="loading()">Clear</button>
+
+  @if (filterForm.controls.minPrice.invalid) {
+    <span class="field-error">Min price cannot be negative</span>
+  }
+</form>
+
+@if (authorsError() && !error()) {
+  <p class="alert alert-warning">Could not load author names: {{ authorsError() }}</p>
+}
+
+@if (loading()) {
+  <p class="loading">Loading books...</p>
+} @else if (error()) {
+  <div class="alert alert-error">
+    <span>Unable to load books: {{ error() }}</span>
+    <button type="button" class="btn btn-small" (click)="reload()">Try again</button>
+  </div>
+} @else if (books().length === 0) {
+  <p class="empty">No books found for these filters.</p>
+} @else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>ISBN</th>
+        <th>Author</th>
+        <th class="num">Price</th>
+        <th class="num">Stock</th>
+        <th>Update stock</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (book of books(); track book.id) {
+        <tr>
+          <td>{{ book.title }}</td>
+          <td class="isbn">{{ book.isbn }}</td>
+          <td>
+            <a [routerLink]="['/authors', book.authorId]">
+              {{ authorNames().get(book.authorId) ?? 'Author #' + book.authorId }}
+            </a>
+          </td>
+          <td class="num">{{ book.price | currency: 'INR' }}</td>
+          <td class="num">
+            @if (book.stock === 0) {
+              <span class="badge badge-out">Out of stock</span>
+            } @else {
+              {{ book.stock }}
+            }
+          </td>
+          <td>
+            <app-stock-control [book]="book" (stockChanged)="onStockChanged($event)" />
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

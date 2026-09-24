@@ -4,7 +4,7 @@
       <tr>
         <th>Book</th>
         @if (authorNames()) {
-          <th>Author</th>
+          <th>{{ currentAuthorId() ? 'Written with' : 'Authors' }}</th>
         }
         <th>Price</th>
         <th>Stock</th>
@@ -25,16 +25,22 @@
           </td>
           @if (authorNames()) {
             <td>
-              <a [routerLink]="['/authors', book.authorId]" class="author">
-                <span
-                  class="avatar"
-                  [style.background]="avatar(book.authorId).background"
-                  [style.color]="avatar(book.authorId).color"
-                >
-                  {{ authorInitials(book.authorId) }}
-                </span>
-                {{ authorName(book.authorId) }}
-              </a>
+              <div class="authors">
+                @for (authorId of shownAuthors(book); track authorId) {
+                  <a [routerLink]="['/authors', authorId]" class="author">
+                    <span
+                      class="avatar"
+                      [style.background]="avatar(authorId).background"
+                      [style.color]="avatar(authorId).color"
+                    >
+                      {{ authorInitials(authorId) }}
+                    </span>
+                    {{ authorName(authorId) }}
+                  </a>
+                } @empty {
+                  <span class="solo">Written alone</span>
+                }
+              </div>
             </td>
           }
           <td class="price-cell">{{ book.price | currency: 'INR' : 'symbol' : '1.0-2' }}</td>

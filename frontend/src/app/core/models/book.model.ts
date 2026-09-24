@@ -4,7 +4,10 @@ export interface Book {
   isbn: string;
   price: number;
   stock: number;
+  // main author
   authorId: number;
+  // every author of the book, main author first
+  authorIds: number[];
   createdAt: string;
   updatedAt: string;
 }
@@ -14,7 +17,8 @@ export interface NewBook {
   isbn: string;
   price: number;
   stock: number;
-  authorId: number;
+  // first one becomes the main author
+  authorIds: number[];
 }
 
 export interface BookFilters {

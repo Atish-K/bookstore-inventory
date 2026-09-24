@@ -9,6 +9,7 @@ What you can do in the app:
 
 - add authors and books (with validation on both sides)
 - see an author with all their books
+- give a book more than one author (co-written books)
 - search books and filter them by stock and minimum price
 - add or remove stock, the API refuses anything that would take stock below 0
 - delete an author, but only when they have no books left
@@ -24,7 +25,7 @@ bookstore-inventory/
 │   │   ├── config/          database config (used by the app and sequelize-cli)
 │   │   ├── migrations/      tables + stored procedures
 │   │   ├── seeders/         sample authors and books
-│   │   ├── models/          Author, Book and the hasMany / belongsTo association
+│   │   ├── models/          Author, Book, BookAuthor and their associations
 │   │   ├── validators/      Joi schemas
 │   │   ├── middlewares/     validation, 404 and the central error handler
 │   │   ├── services/        data access (stored procedure calls, one Sequelize include)
@@ -78,7 +79,7 @@ Create the database, run the migrations and add the sample data:
 ```bash
 npm run db:create     # creates bookstore_inventory (utf8mb4)
 npm run db:migrate    # tables + stored procedures
-npm run db:seed       # 6 authors and 7 books
+npm run db:seed       # 7 authors and 7 books, one of them co-written
 ```
 
 Start the API:
@@ -127,6 +128,7 @@ Covered:
 - stock: 5 parallel `-1` requests on a book with 3 copies → exactly 3 succeed, 2 fail, stock ends at 0
 - filters: `inStock` and `minPrice` alone and together
 - delete: refused while the author has books, works when they have none
+- multiple authors: a co-written book shows up for both authors, nothing is saved when one author id is wrong, the same author can't be added twice, a co-author can't be deleted
 
 ---
 
@@ -138,13 +140,15 @@ Base url: `http://localhost:3000/api`
 | --- | --- | --- |
 | GET | `/authors` | all authors with a `bookCount` |
 | POST | `/authors` | create an author `{ name, bio? }` |
-| GET | `/authors/:id` | author with all their books (Sequelize `include`) |
+| GET | `/authors/:id` | author with all their books, co-written ones included (Sequelize `include`) |
 | DELETE | `/authors/:id` | delete an author, `409` if they still have books |
 | GET | `/books?inStock=true&minPrice=100` | list books, both filters are optional |
-| POST | `/books` | create a book `{ title, isbn, price, stock?, authorId }` |
+| POST | `/books` | create a book `{ title, isbn, price, stock?, authorIds: [4, 7] }`, a single `authorId: 4` also works |
 | PATCH | `/books/:id/stock` | change stock by a signed amount `{ "change": -3 }` |
 
 Filters on `GET /books`: `inStock=true` means stock > 0, `inStock=false` means stock = 0, and `minPrice=100` means price >= 100.
+
+Books can have more than one author. The first id in `authorIds` is the main author. Every book in a response has `authorId` (main author) and `authorIds` (all authors, main author first).
 
 Successful responses are wrapped in `data`:
 
@@ -160,7 +164,7 @@ Every error, from validation, business rules or anything unexpected, goes throug
 
 | Status | When |
 | --- | --- |
-| 400 | validation failed, unknown `authorId`, stock would go below zero |
+| 400 | validation failed, unknown author id, stock would go below zero |
 | 404 | author / book / route not found |
 | 409 | duplicate ISBN, deleting an author who still has books |
 | 500 | anything unexpected (logged on the server, generic message to the client) |
@@ -172,11 +176,14 @@ Every error, from validation, business rules or anything unexpected, goes throug
 Tables are created by migrations only, `sequelize.sync()` is never used.
 
 - `authors`: `id`, `name`, `bio`, timestamps
-- `books`: `id`, `title`, `isbn` (unique), `price` DECIMAL(10,2), `stock` (default 0), `authorId` → `authors.id`, timestamps
+- `books`: `id`, `title`, `isbn` (unique), `price` DECIMAL(10,2), `stock` (default 0), `authorId` → `authors.id` (main author), timestamps
+- `book_authors`: `bookId`, `authorId`, one row for every author of a book (main author included)
 - CHECK constraints: `price > 0`, `stock >= 0`
-- the foreign key is `ON DELETE RESTRICT`, so books are never cascade-deleted
+- the foreign keys to `authors` are `ON DELETE RESTRICT`, so deleting an author never removes books
 
-Stored procedures (in `src/migrations/create-sp-*.js`):
+Migrations run in this order: `create-authors-table`, `create-books-table`, `create-sp-authors`, `create-sp-books`, `multiple-authors-per-book`. The last one adds `book_authors`, copies every existing `authorId` into it and updates the procedures, so an older database is upgraded with `npm run db:migrate`.
+
+Stored procedures (created in `src/migrations/create-sp-*.js`, the book ones updated in `multiple-authors-per-book.js`):
 
 | Procedure | Used by |
 | --- | --- |
@@ -207,7 +214,7 @@ Routes:
 | Path | Page |
 | --- | --- |
 | `/books` | book list with search, stock filter, min price, quick +/- stock and a custom amount dialog |
-| `/books/new` | add book form (`?authorId=3` preselects the author) |
+| `/books/new` | add book form with one or more authors (`?authorId=3` preselects the author) |
 | `/authors` | author list |
 | `/authors/new` | add author form |
 | `/authors/:id` | author detail with their books, add book and delete |
@@ -224,12 +231,12 @@ Routes:
 ## Design decisions
 
 1. All creates, updates, deletes and lists go through MySQL stored procedures, so the business rules (no negative stock, no deleting an author with books, author must exist) sit right next to the data. There is no inline SQL in the Node code.
-2. The one exception is `GET /authors/:id`, which uses `Author.findByPk(id, { include: 'books' })` through the `Author.hasMany(Book)` association, because REQ-3.1 and REQ-4.3 ask for a Sequelize association and include there. The schema, including the procedures, is created by migrations and not by `sequelize.sync()`.
+2. The one exception is `GET /authors/:id`, which uses `Author.findByPk(id, { include: 'books' })` through a Sequelize association, because REQ-3.1 and REQ-4.3 ask for an association and include there. The schema, including the procedures, is created by migrations and not by `sequelize.sync()`.
 3. `sp_update_book_stock` locks the book row with `SELECT ... FOR UPDATE` inside a transaction and rolls back on any error. Two requests at the same time are applied one after the other, and a rejected change never leaves a partial update. The concurrency test checks exactly this.
 4. The procedures raise errors with custom `MYSQL_ERRNO` values, and `callProcedure()` turns them into HTTP responses in one place. The central error middleware then keeps every error in the same `{ error: { message, field } }` format.
 5. Validation runs on both sides: Joi on the API is the source of truth, and the Angular forms repeat the same rules so users get quick feedback. For stock, the UI does not block a change that would go negative. It sends the request and shows the API's message, because only the server knows the current stock.
 6. ISBNs are stored without hyphens and spaces, so `978-81-7371-146-6` and `9788173711466` count as the same book for the unique check.
-7. **Multi-author books (REQ-3.2):** the document refers to REQ-3.2, but that requirement is not in the spec I received. The data model defines a single required `authorId` on Book, so I kept one author per book instead of guessing. Supporting several authors would mean a `book_authors` join table with `belongsToMany` on both models, moving `authorId` out of `books`, and changing the delete rule to check the join table.
+7. **Multi-author books (REQ-3.2):** the document refers to REQ-3.2 but doesn't include it, so I read it as "a book can have more than one author" and built it without breaking the data model that is written down. `books.authorId` stays as the main author (with `Author.hasMany(Book)`), and a `book_authors` table lists every author of a book, used through `belongsToMany`. `POST /books` takes `authorIds`, and the single `authorId` from the spec still works. The delete rule looks at `book_authors`, so co-authors are protected too. It was added as a new migration, so existing databases are upgraded instead of rebuilt.
 8. For route-level data loading (REQ-5.7) the author page receives `:id` as a component input (`withComponentInputBinding`) and fetches the author itself, instead of using a resolver. That way the page can show its own skeleton and error state, and navigation isn't blocked while the request runs.
 9. The frontend reaches the API through environment files and CORS (`CORS_ORIGIN`) instead of a dev-server proxy, so the same setup works locally and when deployed.
 

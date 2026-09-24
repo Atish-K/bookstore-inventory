@@ -22,6 +22,58 @@
   grid-column: 1 / -1;
 }
 
+/* ---------- author picker ---------- */
+
+.picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.picked-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.main-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.remove {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+select.invalid {
+  border-color: #fca5a5;
+  background-color: #fffafa;
+}
+
 /* ---------- live preview ---------- */
 
 .preview {

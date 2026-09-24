@@ -23,6 +23,8 @@ export class BookTableComponent {
   books = input.required<Book[]>();
   // author id -> name, the author column is hidden when this is not passed
   authorNames = input<Map<number, string>>();
+  // on an author's page: that author is left out and the column shows the co-authors
+  currentAuthorId = input<number>();
   stockChanged = output<Book>();
 
   // quick +/- buttons: which rows are saving, and the last error for a row
@@ -54,6 +56,10 @@ export class BookTableComponent {
 
   authorName(authorId: number) {
     return this.authorNames()?.get(authorId) ?? `Author #${authorId}`;
+  }
+
+  shownAuthors(book: Book) {
+    return book.authorIds.filter((authorId) => authorId !== this.currentAuthorId());
   }
 
   stockStatus(book: Book): 'out' | 'low' | 'ok' {

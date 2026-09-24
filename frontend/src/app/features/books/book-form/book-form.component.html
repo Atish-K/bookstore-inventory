@@ -63,7 +63,7 @@
         </div>
 
         <div class="field full">
-          <label for="authorId">Author</label>
+          <label for="addAuthor">Authors</label>
           @if (authorsError()) {
             <div class="alert alert-error">
               <app-icon name="alert" [size]="18" />
@@ -71,16 +71,47 @@
               <button type="button" class="btn btn-sm" (click)="loadAuthors()">Try again</button>
             </div>
           } @else {
-            <select id="authorId" formControlName="authorId">
-              <option [ngValue]="null" disabled>
-                {{ authorsLoading() ? 'Loading authors...' : 'Select an author' }}
+            @if (selectedAuthors().length) {
+              <div class="picked">
+                @for (author of selectedAuthors(); track author.id; let first = $first) {
+                  <span class="picked-author">
+                    <span
+                      class="avatar"
+                      [style.background]="avatar(author.id).background"
+                      [style.color]="avatar(author.id).color"
+                    >
+                      {{ initials(author.name) }}
+                    </span>
+                    {{ author.name }}
+                    @if (first) {
+                      <span class="main-tag">Main author</span>
+                    }
+                    <button
+                      type="button"
+                      class="remove"
+                      (click)="removeAuthor(author.id)"
+                      [attr.aria-label]="'Remove ' + author.name"
+                    >
+                      <app-icon name="close" [size]="13" />
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+
+            <select id="addAuthor" (change)="addAuthor($event)" [disabled]="authorsLoading()" [class.invalid]="!!errorFor('authorIds')">
+              <option value="">
+                {{ authorsLoading() ? 'Loading authors...' : selectedAuthors().length ? '+ Add a co-author' : 'Select an author' }}
               </option>
-              @for (author of authors(); track author.id) {
-                <option [ngValue]="author.id">{{ author.name }}</option>
+              @for (author of availableAuthors(); track author.id) {
+                <option [value]="author.id">{{ author.name }}</option>
               }
             </select>
-            @if (errorFor('authorId'); as message) {
+
+            @if (errorFor('authorIds'); as message) {
               <span class="field-error">{{ message }}</span>
+            } @else {
+              <span class="hint">The first author is the main author. Add more for books written together.</span>
             }
             @if (!authorsLoading() && authors().length === 0) {
               <span class="hint">No authors yet, <a routerLink="/authors/new">add an author</a> first.</span>
@@ -106,7 +137,7 @@
       </div>
       <div class="preview-info">
         <p class="preview-title">{{ preview().title }}</p>
-        <p class="preview-author">{{ preview().author }}</p>
+        <p class="preview-author">{{ preview().authors }}</p>
         <p class="preview-price">
           {{ preview().price !== null ? (preview().price | currency: 'INR' : 'symbol' : '1.0-2') : '₹ --' }}
         </p>

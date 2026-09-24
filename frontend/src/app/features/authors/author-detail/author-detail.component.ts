@@ -1,7 +1,7 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { ApiError } from '../../../core/models/api.model';
 import { AuthorWithBooks } from '../../../core/models/author.model';
 import { Book } from '../../../core/models/book.model';
@@ -27,6 +27,8 @@ export class AuthorDetailComponent {
   id = input.required<string>();
 
   author = signal<AuthorWithBooks | null>(null);
+  // names of all authors, to show who else wrote a book
+  authorNames = signal(new Map<number, string>());
   loading = signal(false);
   error = signal<string | null>(null);
 
@@ -58,9 +60,13 @@ export class AuthorDetailComponent {
     this.error.set(null);
 
     this.request?.unsubscribe();
-    this.request = this.authorService.getAuthor(id).subscribe({
-      next: (author) => {
+    this.request = forkJoin({
+      author: this.authorService.getAuthor(id),
+      authors: this.authorService.getAuthors()
+    }).subscribe({
+      next: ({ author, authors }) => {
         this.author.set(author);
+        this.authorNames.set(new Map(authors.map((a) => [a.id, a.name])));
         this.loading.set(false);
       },
       error: (err: ApiError) => {

@@ -9,7 +9,8 @@ import { AuthorService } from '../../../core/services/author.service';
 import { BookService } from '../../../core/services/book.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
-import { greaterThan, isbn, requiredText, wholeNumber } from '../../../shared/validators/form-validators';
+import { avatarColors, initials } from '../../../shared/utils/colors';
+import { atLeastOne, greaterThan, isbn, requiredText, wholeNumber } from '../../../shared/validators/form-validators';
 
 @Component({
   selector: 'app-book-form',
@@ -39,19 +40,31 @@ export class BookFormComponent implements OnInit {
     isbn: ['', [requiredText, isbn]],
     price: this.fb.control<number | null>(null, [Validators.required, greaterThan(0)]),
     stock: this.fb.control<number | null>(0, [Validators.required, Validators.min(0), wholeNumber]),
-    authorId: this.fb.control<number | null>(null, Validators.required)
+    // first one is the main author, the rest are co-authors
+    authorIds: this.fb.control<number[]>([], atLeastOne)
+  });
+
+  private formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  selectedAuthors = computed(() =>
+    (this.formValue().authorIds ?? [])
+      .map((id) => this.authors().find((author) => author.id === id))
+      .filter((author): author is AuthorListItem => !!author)
+  );
+
+  // the dropdown only offers authors that are not picked yet
+  availableAuthors = computed(() => {
+    const picked = this.formValue().authorIds ?? [];
+    return this.authors().filter((author) => !picked.includes(author.id));
   });
 
   // live preview card on the right side of the form
-  private formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
-
   preview = computed(() => {
     const value = this.formValue();
-    const title = value.title?.trim() || 'Book title';
-    const author = this.authors().find((a) => a.id === value.authorId);
+    const names = this.selectedAuthors().map((author) => author.name);
     return {
-      title,
-      author: author?.name ?? 'Author name',
+      title: value.title?.trim() || 'Book title',
+      authors: names.length ? names.join(' & ') : 'Author name',
       price: value.price ?? null,
       stock: value.stock ?? 0
     };
@@ -60,7 +73,7 @@ export class BookFormComponent implements OnInit {
   ngOnInit() {
     const authorId = Number(this.authorId());
     if (authorId) {
-      this.form.patchValue({ authorId });
+      this.form.controls.authorIds.setValue([authorId]);
     }
     this.loadAuthors();
   }
@@ -81,6 +94,25 @@ export class BookFormComponent implements OnInit {
     });
   }
 
+  addAuthor(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const id = Number(select.value);
+    select.value = '';
+    if (!id) {
+      return;
+    }
+
+    const control = this.form.controls.authorIds;
+    control.setValue([...control.value, id]);
+    control.markAsTouched();
+  }
+
+  removeAuthor(id: number) {
+    const control = this.form.controls.authorIds;
+    control.setValue(control.value.filter((authorId) => authorId !== id));
+    control.markAsTouched();
+  }
+
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -97,7 +129,7 @@ export class BookFormComponent implements OnInit {
         isbn: value.isbn.trim(),
         price: value.price!,
         stock: value.stock!,
-        authorId: value.authorId!
+        authorIds: value.authorIds
       })
       .subscribe({
         next: (book) => {
@@ -111,7 +143,7 @@ export class BookFormComponent implements OnInit {
       });
   }
 
-  errorFor(name: 'title' | 'isbn' | 'price' | 'stock' | 'authorId'): string | null {
+  errorFor(name: 'title' | 'isbn' | 'price' | 'stock' | 'authorIds'): string | null {
     const control = this.form.controls[name];
     if (!control.touched || !control.errors) {
       return null;
@@ -122,7 +154,7 @@ export class BookFormComponent implements OnInit {
       isbn: 'ISBN is required',
       price: 'Price is required',
       stock: 'Stock is required',
-      authorId: 'Please select an author'
+      authorIds: 'Please select at least one author'
     };
 
     const errors = control.errors;
@@ -134,6 +166,14 @@ export class BookFormComponent implements OnInit {
     if (errors['min']) return 'Stock cannot be negative';
     if (errors['wholeNumber']) return 'Stock must be a whole number';
     return 'Invalid value';
+  }
+
+  avatar(authorId: number) {
+    return avatarColors(authorId);
+  }
+
+  initials(name: string) {
+    return initials(name);
   }
 
   // if the api says which field is wrong (eg. duplicate isbn) show it under that field,

@@ -52,7 +52,7 @@ export class BookListComponent implements OnInit {
       (book) =>
         book.title.toLowerCase().includes(term) ||
         book.isbn.includes(term) ||
-        (this.authorNames().get(book.authorId) ?? '').toLowerCase().includes(term)
+        this.authorsOf(book).toLowerCase().includes(term)
     );
   });
 
@@ -61,7 +61,7 @@ export class BookListComponent implements OnInit {
     const units = books.reduce((total, book) => total + book.stock, 0);
     return {
       titles: books.length,
-      authors: new Set(books.map((book) => book.authorId)).size,
+      authors: new Set(books.flatMap((book) => book.authorIds)).size,
       units,
       average: books.length ? units / books.length : 0,
       value: books.reduce((total, book) => total + book.price * book.stock, 0),
@@ -131,7 +131,7 @@ export class BookListComponent implements OnInit {
     const rows = this.visibleBooks().map((book) => [
       book.title,
       book.isbn,
-      this.authorNames().get(book.authorId) ?? '',
+      this.authorsOf(book),
       book.price,
       book.stock
     ]);
@@ -145,6 +145,11 @@ export class BookListComponent implements OnInit {
     link.download = 'books.csv';
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  // "A. P. J. Abdul Kalam, Arun Tiwari", used by the search and the csv export
+  private authorsOf(book: Book) {
+    return book.authorIds.map((id) => this.authorNames().get(id) ?? '').join(', ');
   }
 
   private loadAuthorNames() {

@@ -52,7 +52,7 @@
         (input)="search.set($any($event.target).value)"
       />
     </label>
-    @if (!loading() || authors().length) {
+    @if (!error() && (!loading() || authors().length)) {
       <div class="toolbar-end">
         <span class="count">{{ visibleAuthors().length }} {{ visibleAuthors().length === 1 ? 'author' : 'authors' }}</span>
       </div>

@@ -64,7 +64,12 @@
     </div>
 
     @if (author.books.length) {
-      <app-book-table [books]="author.books" (stockChanged)="onStockChanged($event)" />
+      <app-book-table
+        [books]="author.books"
+        [authorNames]="authorNames()"
+        [currentAuthorId]="author.id"
+        (stockChanged)="onStockChanged($event)"
+      />
     } @else {
       <div class="empty-state">
         <span class="empty-icon"><app-icon name="book" [size]="24" /></span>

@@ -8,6 +8,12 @@ export function requiredText(control: AbstractControl): ValidationErrors | null 
   return value && value.trim() ? null : { required: true };
 }
 
+// for list values like the selected authors
+export function atLeastOne(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as unknown[] | null;
+  return value && value.length > 0 ? null : { required: true };
+}
+
 export function greaterThan(min: number): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (control.value === null || control.value === '') {

@@ -90,7 +90,7 @@
       @if (hasFilters()) {
         <button type="button" class="btn-link" (click)="clearFilters()">Clear filters</button>
       }
-      @if (!loading() || books().length) {
+      @if (!error() && (!loading() || books().length)) {
         <span class="count">{{ visibleBooks().length }} {{ visibleBooks().length === 1 ? 'book' : 'books' }}</span>
       }
     </div>

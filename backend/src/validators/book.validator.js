@@ -16,8 +16,24 @@ const addBookSchema = Joi.object({
     .messages({ 'string.pattern.base': 'ISBN must have 10 or 13 digits' }),
   price: Joi.number().greater(0).max(99999999.99).precision(2).required().label('Price'),
   stock: Joi.number().integer().min(0).max(100000).default(0).label('Stock'),
-  authorId: Joi.number().integer().positive().required().label('Author'),
-});
+  // one or more authors, the first one is the main author.
+  // single() also accepts one id instead of a list
+  authorIds: Joi.array()
+    .items(Joi.number().integer().positive().label('Author id'))
+    .single()
+    .unique()
+    .min(1)
+    .max(10)
+    .required()
+    .label('Author')
+    .messages({
+      'array.unique': 'The same author is selected twice',
+      'array.min': 'Select at least one author',
+    }),
+})
+  // the requirements send a single authorId, it becomes authorIds: [id]
+  .rename('authorId', 'authorIds')
+  .messages({ 'object.rename.override': 'Send either authorId or authorIds, not both' });
 
 const bookFilterSchema = Joi.object({
   inStock: Joi.boolean(),

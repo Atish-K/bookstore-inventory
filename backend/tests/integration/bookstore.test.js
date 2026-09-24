@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../../src/app');
-const { sequelize, Author, Book } = require('../../src/models');
+const { sequelize, Author, Book, BookAuthor } = require('../../src/models');
 
 async function createAuthor(name = 'Ruskin Bond') {
   const res = await request(app)
@@ -52,6 +52,8 @@ describe('happy path', () => {
 
     expect(bookRes.status).toBe(201);
     expect(bookRes.body.data.isbn).toBe('9788129107282');
+    // a single authorId (as in the requirements) still works
+    expect(bookRes.body.data.authorIds).toEqual([authorId]);
 
     const getRes = await request(app).get(`/api/authors/${authorId}`);
 
@@ -106,7 +108,7 @@ describe('validation', () => {
       .send({ title: 'Ghost Book', isbn: '9788129107282', price: 99, authorId: 999999 });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.field).toBe('authorId');
+    expect(res.body.error).toEqual({ message: 'Author with id 999999 does not exist', field: 'authorIds' });
   });
 
   test('rejects a duplicate isbn', async () => {
@@ -200,5 +202,64 @@ describe('delete author', () => {
 
     expect(res.status).toBe(204);
     expect(await Author.findByPk(author.id)).toBeNull();
+  });
+});
+
+describe('multiple authors', () => {
+  test('a co-written book shows up for both authors', async () => {
+    const kalam = await createAuthor('A. P. J. Abdul Kalam');
+    const tiwari = await createAuthor('Arun Tiwari');
+
+    const bookRes = await request(app)
+      .post('/api/books')
+      .send({ title: 'Wings of Fire', isbn: '9788173711466', price: 399, stock: 20, authorIds: [kalam.id, tiwari.id] });
+
+    expect(bookRes.status).toBe(201);
+    // first author is the main author
+    expect(bookRes.body.data).toMatchObject({ authorId: kalam.id, authorIds: [kalam.id, tiwari.id] });
+
+    for (const author of [kalam, tiwari]) {
+      const res = await request(app).get(`/api/authors/${author.id}`);
+      expect(res.body.data.books).toHaveLength(1);
+      expect(res.body.data.books[0]).toMatchObject({ title: 'Wings of Fire', authorIds: [kalam.id, tiwari.id] });
+    }
+
+    const list = await request(app).get('/api/books');
+    expect(list.body.data[0].authorIds).toEqual([kalam.id, tiwari.id]);
+  });
+
+  test('saves nothing when one of the authors does not exist', async () => {
+    const author = await createAuthor();
+
+    const res = await request(app)
+      .post('/api/books')
+      .send({ title: 'Half Valid', isbn: '9788129107282', price: 150, authorIds: [author.id, 999999] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.field).toBe('authorIds');
+    expect(await Book.count()).toBe(0);
+    expect(await BookAuthor.count()).toBe(0);
+  });
+
+  test('rejects the same author twice', async () => {
+    const author = await createAuthor();
+
+    const res = await request(app)
+      .post('/api/books')
+      .send({ title: 'Twice', isbn: '9788129107282', price: 150, authorIds: [author.id, author.id] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toEqual({ message: 'The same author is selected twice', field: 'authorIds' });
+  });
+
+  test('a co-author cannot be deleted while linked to a book', async () => {
+    const main = await createAuthor('A. P. J. Abdul Kalam');
+    const coAuthor = await createAuthor('Arun Tiwari');
+    await createBook(undefined, { authorIds: [main.id, coAuthor.id] });
+
+    const res = await request(app).delete(`/api/authors/${coAuthor.id}`);
+
+    expect(res.status).toBe(409);
+    expect(await Author.findByPk(coAuthor.id)).not.toBeNull();
   });
 });

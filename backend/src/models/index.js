@@ -8,8 +8,14 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
 
 const Author = require('./author.model')(sequelize);
 const Book = require('./book.model')(sequelize);
+const BookAuthor = require('./book-author.model')(sequelize);
 
-Author.hasMany(Book, { foreignKey: 'authorId', as: 'books' });
-Book.belongsTo(Author, { foreignKey: 'authorId', as: 'author' });
+// main author of a book (books.authorId)
+Author.hasMany(Book, { foreignKey: 'authorId', as: 'mainBooks' });
+Book.belongsTo(Author, { foreignKey: 'authorId', as: 'mainAuthor' });
 
-module.exports = { sequelize, Sequelize, Author, Book };
+// every author of a book, co-authors included (book_authors)
+Author.belongsToMany(Book, { through: BookAuthor, foreignKey: 'authorId', otherKey: 'bookId', as: 'books' });
+Book.belongsToMany(Author, { through: BookAuthor, foreignKey: 'bookId', otherKey: 'authorId', as: 'authors' });
+
+module.exports = { sequelize, Sequelize, Author, Book, BookAuthor };

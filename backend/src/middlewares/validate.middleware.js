@@ -15,7 +15,8 @@ function validate(schemas) {
 
       if (error) {
         const detail = error.details[0];
-        return next(new AppError(detail.message, 400, detail.path.join('.')));
+        // only the field name, an array item would otherwise give "authorIds.1"
+        return next(new AppError(detail.message, 400, detail.path[0]));
       }
 
       req.validated[source] = value;

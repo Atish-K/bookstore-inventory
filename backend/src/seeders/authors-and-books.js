@@ -25,7 +25,8 @@ const authors = [
   {
     name: 'A. P. J. Abdul Kalam',
     bio: 'Aerospace scientist and the 11th President of India.',
-    books: [{ title: 'Wings of Fire', isbn: '9788173711466', price: 399, stock: 20 }],
+    // his autobiography was written together with Arun Tiwari
+    books: [{ title: 'Wings of Fire', isbn: '9788173711466', price: 399, stock: 20, coAuthors: ['Arun Tiwari'] }],
   },
   {
     name: 'Arundhati Roy',
@@ -38,27 +39,39 @@ const authors = [
     bio: 'Engineer, teacher and writer. Her short stories are simple and very relatable.',
     books: [],
   },
+  {
+    name: 'Arun Tiwari',
+    bio: 'Worked with Dr. Kalam at DRDL in Hyderabad and co-wrote Wings of Fire with him.',
+    books: [],
+  },
 ];
 
 module.exports = {
   // going through the same procedures as the API, so seed data follows the same rules
   async up(queryInterface) {
     const { sequelize } = queryInterface;
+    const idByName = {};
 
-    for (const { books, ...author } of authors) {
+    // authors first, a book can only link to authors that already exist
+    for (const author of authors) {
       const [created] = await sequelize.query('CALL sp_add_author(?, ?)', {
         replacements: [author.name, author.bio],
       });
+      idByName[author.name] = created.id;
+    }
 
-      for (const book of books) {
+    for (const author of authors) {
+      for (const book of author.books) {
+        const authorIds = [author.name, ...(book.coAuthors ?? [])].map((name) => idByName[name]);
         await sequelize.query('CALL sp_add_book(?, ?, ?, ?, ?)', {
-          replacements: [book.title, book.isbn, book.price, book.stock, created.id],
+          replacements: [book.title, book.isbn, book.price, book.stock, authorIds.join(',')],
         });
       }
     }
   },
 
-  // clears everything, books added from the UI would otherwise block deleting the authors
+  // clears everything (book_authors rows go with the books), books added from the UI
+  // would otherwise block deleting the authors
   async down(queryInterface) {
     await queryInterface.bulkDelete('books', null, {});
     await queryInterface.bulkDelete('authors', null, {});

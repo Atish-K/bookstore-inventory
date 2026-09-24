@@ -7,7 +7,7 @@ const procedureErrors = {
   5002: { status: 409 }, // author still has books
   5003: { status: 404 }, // book not found
   5004: { status: 400, field: 'stock' }, // stock below zero
-  5005: { status: 400, field: 'authorId' }, // author of new book doesn't exist
+  5005: { status: 400, field: 'authorIds' }, // author of new book doesn't exist
   5006: { status: 409, field: 'isbn' }, // duplicate isbn
 };
 
